@@ -134,6 +134,15 @@ def _parameter_valuespec_windows_updates_kpc() -> Dictionary:
                     prefill_fixed_levels=InputHint((48, 96)),
                 )
             ),
+            "levels_failed": DictElement[SimpleLevelsConfigModel[int]](
+                parameter_form=SimpleLevels(
+                    title=Title("Levels for failed updates"),
+                    level_direction=LevelDirection.UPPER,
+                    form_spec_template=Integer(),
+                    prefill_levels_type=DefaultValue(LevelsType.FIXED),
+                    prefill_fixed_levels=InputHint((1, 5)),
+                )
+            ),
         },
         title=Title("Windows Updates"),
         help_text=Help("Windows Updates"),  

@@ -39,7 +39,7 @@ $pswindow.buffersize = $newsize
 $now = Get-Date
 
 
-try
+try 
 {
 
     #Checking for Datetime when the last update was installed and Show the Update History of the last 80 Updates
@@ -50,30 +50,30 @@ try
     #$lastupdateinstalldate=@{}
 
     
-    try
+    try 
     {
-       #$lastupdateinstalldate=@{}
-       $Session = New-Object -ComObject Microsoft.Update.Session
-       $Searcher = $Session.CreateUpdateSearcher()
-       #$lastupdateinstalldate = $Searcher.QueryHistory(0,1) | select -ExpandProperty Date
-       $updatehistory = $Searcher.QueryHistory(0,1000)
+        #$lastupdateinstalldate=@{}
+        $Session = New-Object -ComObject Microsoft.Update.Session
+        $Searcher = $Session.CreateUpdateSearcher()
+        #$lastupdateinstalldate = $Searcher.QueryHistory(0,1) | select -ExpandProperty Date
+        $updatehistory = $Searcher.QueryHistory(0, 1000)
     }
-    catch
+    catch 
     {
         $errMsg = $_.Exception.Message
         $errItem = $_.Exception.ItemName
         $updatehistorysearcherror = "There was an error getting update history information. Maybe Windows update is not activated or System cannot get information from WSUS Server. Error Message: $errMsg"
     }
 
-    if ($updatehistory -and $updatehistory.count -gt 0)
+    if ($updatehistory -and $updatehistory.count -gt 0) 
     {
     
-        foreach ($lastupdate in $updatehistory)
+        foreach ($lastupdate in $updatehistory) 
         {
-            if ($lastupdate.Date -and $lastupdate.Title -and $lastupdate.Title -notlike "*Intelligence[ -]Update*" -and $lastupdatelistcounter -lt 80 )
+            if ($lastupdate.Date -and $lastupdate.Title -and $lastupdate.Title -notlike "*Intelligence[ -]Update*" -and $lastupdatelistcounter -lt 80 ) 
             {
                 $lastupdatelist = $lastupdatelist + $lastupdate.Date.tostring("yyyy-MM-dd hh:mm:ss") + " " + $lastupdate.Title + "XXXNEWLINEXXX"
-                if($lastupdateinstalldate -eq "")
+                if ($lastupdateinstalldate -eq "") 
                 {
                     $lastupdateinstalldate = $lastupdate.Date
                 }
@@ -82,36 +82,36 @@ try
         }
     }
 
-    if ($lastupdateinstalldate)
+    if ($lastupdateinstalldate) 
     {
         $lastupdateinstalldays = New-TimeSpan -Start $lastupdateinstalldate -End $now
         $lastupdateinstalldays = $lastupdateinstalldays.Days
         $lastupdateinstalldate = $lastupdateinstalldate.tostring("yyyy-MM-dd hh:mm:ss")
     }
-    else
+    else 
     {
         $lastupdateinstalldate = "No history found"
         $lastupdateinstalldays = "99999"
     }
-    if ($lastupdatelist -eq "")
+    if ($lastupdatelist -eq "") 
     {
         $lastupdatelist = "-"
     }
     $lastupdatelist = $lastupdatelist -replace "`n|`r"
     $outputlastupdateinstalldate = "<<<windows_lastupdateinstalldate_kpc:sep(9):encoding(cp437)>>>`n"
     $jobname_windows_lastupdateinstalldate_kpc = "Windows Update History"
-    $outputlastupdateinstalldate = "$outputlastupdateinstalldate" + "$jobname_windows_lastupdateinstalldate_kpc" + "`t"  + "$lastupdateinstalldate" + "`t" + "$lastupdateinstalldays" + "`t" + "$updatehistorysearcherror" + "`t" + "$lastupdatelist"
+    $outputlastupdateinstalldate = "$outputlastupdateinstalldate" + "$jobname_windows_lastupdateinstalldate_kpc" + "`t" + "$lastupdateinstalldate" + "`t" + "$lastupdateinstalldays" + "`t" + "$updatehistorysearcherror" + "`t" + "$lastupdatelist"
     write-host "$outputlastupdateinstalldate"
 
 
     ####Check if a reboot is required and since how many days###
     $rebootrequired = Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired"
-    if ($rebootrequired -eq "True")
+    if ($rebootrequired -eq "True") 
     {
         
         $rebootrequired = "Yes"
         $rebootrequiredsince = Get-ItemProperty -path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired" -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Select-Object -ExpandProperty 'RebootRequiredSince' -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
-        if($rebootrequiredsince)
+        if ($rebootrequiredsince) 
         {
             $rebootrequiredsince = Get-Date -Date $rebootrequiredsince 
             $rebootrequiredsince = $rebootrequiredsince.ToLocalTime()
@@ -120,17 +120,17 @@ try
             $rebootrequiredsinchours = [Math]::Truncate($rebootrequiredsinchours)
             $rebootrequiredsince = $rebootrequiredsince.tostring("yyyy-MM-dd hh:mm:ss")
         }
-        else
+        else 
         {
             $rebootrequiredsince = "notimefound"
             $rebootrequiredsinchours = "99999"
         }
     }
-    else
+    else 
     {
-    $rebootrequired = "No"
-    $rebootrequiredsince = "0"
-    $rebootrequiredsinchours = "0"
+        $rebootrequired = "No"
+        $rebootrequiredsince = "0"
+        $rebootrequiredsinchours = "0"
     }
     
 
@@ -151,15 +151,17 @@ try
     $Moderateupdates=""
     $Unspecifiedcount=0
     $Unspecifiedupdates=""
+    $Failedcount=0
+    $Failedupdates=""
     $updatesearcherror=0
-    try
+    try 
     {
         $UpdateSession = New-Object -ComObject Microsoft.Update.Session
         $UpdateSearcher = $UpdateSession.CreateupdateSearcher()
         $Updates = @($UpdateSearcher.Search("IsHidden=0 and IsInstalled=0").Updates)
 
     }
-    catch
+    catch 
     {
         $errMsg = $_.Exception.Message
         $errItem = $_.Exception.ItemName
@@ -167,50 +169,50 @@ try
     }
 
 
-    if ($Updates -and $Updates.count -gt 0)
+    if ($Updates -and $Updates.count -gt 0) 
     {
     
-        foreach ($Update in $Updates)
+        foreach ($Update in $Updates) 
         {
             $Updatetitle = $Update.Title
             $Updatetitle = $Updatetitle -replace "`n|`r"
 
-            if ($Update.AutoSelectOnWebSites -eq "True" -and $Update.Title -notlike "*Intelligence[ -]Update*")
+            if ($Update.AutoSelectOnWebSites -eq "True" -and $Update.Title -notlike "*Intelligence[ -]Update*") 
             {
                 $important1updates = $important1updates + $Updatetitle + "XXXNEWLINEXXX"
                 $important1count++
             }            
-            if ($Update.AutoSelectOnWebSites -ne "True" -or $Update.Title -like "*Intelligence[ -]Update*")
+            if ($Update.AutoSelectOnWebSites -ne "True" -or $Update.Title -like "*Intelligence[ -]Update*") 
             {
                 $Optionalupdates = $Optionalupdates + $Updatetitle + "XXXNEWLINEXXX"
                 $Optionalcount++
             }
-            if ($Update.IsMandatory -eq 1)
+            if ($Update.IsMandatory -eq 1) 
             {
                 $Mandatoryupdates = $Mandatoryupdates + $Updatetitle + "XXXNEWLINEXXX"
                 $Mandatorycount++
             }
-            if ($Update.MsrcSeverity -eq "Critical")
+            if ($Update.MsrcSeverity -eq "Critical") 
             {
                 $Criticalupdates = $Criticalupdates + $Updatetitle + "XXXNEWLINEXXX"
                 $Criticalcount++
             }
-            if ($Update.MsrcSeverity -eq "Important")
+            if ($Update.MsrcSeverity -eq "Important") 
             {
                 $Importantupdates = $Importantupdates + $Updatetitle + "XXXNEWLINEXXX"
                 $Importantcount++
             }
-            if ($Update.MsrcSeverity -eq "Low")
+            if ($Update.MsrcSeverity -eq "Low") 
             {
                 $Lowupdates = $Lowupdates + $Updatetitle + "XXXNEWLINEXXX"
                 $Lowcount++
             }
-            if ($Update.MsrcSeverity -eq "Moderate")
+            if ($Update.MsrcSeverity -eq "Moderate") 
             {
                 $Moderateupdates = $Moderateupdates + $Updatetitle  + "XXXNEWLINEXXX"
                 $Moderatecount++
             }
-            if ($Update.MsrcSeverity -eq $null)
+            if ($Update.MsrcSeverity -eq $null) 
             {
                 $Unspecifiedupdates = $Unspecifiedupdates + $Updatetitle + "XXXNEWLINEXXX"
                 $Unspecifiedcount++
@@ -218,45 +220,72 @@ try
         }
 
 
-}
+    }
 
-    if ($Mandatoryupdates -eq "")
+    #Checking for failed updates in update history
+    try 
+    {
+        $FailedUpdates = @($Searcher.QueryHistory(0, 1000) | Where-Object { $_.ResultCode -eq 4 })
+    }
+    catch 
+    {
+        $errMsg = $_.Exception.Message
+        $FailedUpdates = @()
+    }
+
+    if ($FailedUpdates -and $FailedUpdates.count -gt 0) 
+    {
+        foreach ($failedupdate in $FailedUpdates) 
+        {
+            if ($failedupdate.Date -and $failedupdate.Title -and $failedupdate.Title -notlike "*Intelligence[ -]Update*") 
+            {
+                $Failedupdates = $Failedupdates + $failedupdate.Date.tostring("yyyy-MM-dd hh:mm:ss") + " " + $failedupdate.Title + "XXXNEWLINEXXX"
+                $Failedcount++
+            }
+        }
+    }
+
+    if ($Mandatoryupdates -eq "") 
     {
         $Mandatoryupdates = "-"
     }
-    if ($Optionalupdates -eq "")
+    if ($Optionalupdates -eq "") 
     {
         $Optionalupdates = "-"
     }
-    if ($Criticalupdates -eq "")
+    if ($Criticalupdates -eq "") 
     {
         $Criticalupdates = "-"
     }
-    if ($Moderateupdates -eq "")
+    if ($Moderateupdates -eq "") 
     {
         $Moderateupdates = "-"
     }
-    if ($Lowupdates -eq "")
+    if ($Lowupdates -eq "") 
     {
         $Lowupdates = "-"
     }
-    if ($Unspecifiedupdates -eq "")
+    if ($Unspecifiedupdates -eq "") 
     {
         $Unspecifiedupdates = "-"
+    }
+    if ($Failedupdates -eq "") 
+    {
+        $Failedupdates = "-"
     }
 
    
     
     $outputwindowsupdates = "<<<windows_updates_kpc:sep(9):encoding(cp437)>>>`n"
     $jobname_windows_updates_kpc = "Windows Updates"
-    $outputwindowsupdates = "$outputwindowsupdates" + "$jobname_windows_updates_kpc" + "`t" + "$Mandatorycount" + "`t" + "$important1count" +  "`t" + "$Optionalcount" + "`t" + "$Criticalcount" + "`t" + "$Importantcount" + "`t" + "$Moderatecount" + "`t" + "$Lowcount" + "`t" + "$Unspecifiedcount" + "`t" + "$rebootrequired" + "`t" + "$rebootrequiredsince" + "`t" +  "$rebootrequiredsinchours" + "`t" + "$updatesearcherror" + "`t" +  "$Mandatoryupdates" + "`t" + "$important1updates" + "`t" + "$Optionalupdates" + "`t" + "$Criticalupdates" + "`t" + "$Importantupdates" + "`t" + "$Lowupdates" + "`t" + "$Moderateupdates" + "`t" + "$Unspecifiedupdates"
+    $outputwindowsupdates = "$outputwindowsupdates" + "$jobname_windows_updates_kpc" + "`t" + "$Mandatorycount" + "`t" + "$important1count" + "`t" + "$Optionalcount" + "`t" + "$Criticalcount" + "`t" + "$Importantcount" + "`t" + "$Moderatecount" + "`t" + "$Lowcount" + "`t" + "$Unspecifiedcount" + "`t" + "$rebootrequired" + "`t" + "$rebootrequiredsince" + "`t" + "$rebootrequiredsinchours" + "`t" + "$updatesearcherror" + "`t" +  "$Mandatoryupdates" + "`t" + "$important1updates" + "`t" + "$Optionalupdates" + "`t" + "$Criticalupdates" + "`t" + "$Importantupdates" + "`t" + "$Lowupdates" + "`t" + "$Moderateupdates" + "`t" + "$Unspecifiedupdates" + "`t" + "$Failedcount" + "`t" + "$Failedupdates"
     $outputwindowsupdates = $outputwindowsupdates
     write-host "$outputwindowsupdates"
 }
-catch
+catch 
 {
-$errMsg = $_.Exception.Message
-$errItem = $_.Exception.ItemName
-Write-Error "Totally unexpected and unhandled error occured:`n Item: $errItem`n Error Message: $errMsg"
-Break
+    $errMsg = $_.Exception.Message
+    $errItem = $_.Exception.ItemName
+    Write-Error "Totally unexpected and unhandled error occured:`n Item: $errItem`n Error Message: $errMsg"
+    Break
 }

@@ -39,7 +39,7 @@ from datetime import datetime, timedelta
 
 
 def discover_windows_updates_kpc(section):
-    for jobname_windows_updates_kpc, Mandatorycount, important1count, Optionalcount, Criticalcount, Importantcount, Moderatecount, Lowcount, Unspecifiedcount, rebootrequired, rebootrequiredsince, rebootrequiredsincehours, updatesearcherror, Mandatoryupdates, important1updates, Optionalupdates, Criticalupdates, Importantupdates, Lowupdates, Moderateupdates, Unspecifiedupdates in section:  
+    for jobname_windows_updates_kpc, Mandatorycount, important1count, Optionalcount, Criticalcount, Importantcount, Moderatecount, Lowcount, Unspecifiedcount, rebootrequired, rebootrequiredsince, rebootrequiredsincehours, updatesearcherror, Mandatoryupdates, important1updates, Optionalupdates, Criticalupdates, Importantupdates, Lowupdates, Moderateupdates, Unspecifiedupdates, Failedcount, Failedupdates in section:  
         yield Service(item=jobname_windows_updates_kpc)
 
 
@@ -139,12 +139,22 @@ def check_windows_updates_kpc(item, params, section):
           pendingrebootcrit = 9999999999999999
           pendingrebootenabled = 'Disabled'
 
+    failedenabled = params["levels_failed"][0]
+    if failedenabled == 'fixed':
+          failedwarn = params["levels_failed"][1][0]
+          failedcrit = params["levels_failed"][1][1]
+          failedenabled = 'Enabled'
+    else:
+          failedwarn = 9999999999999999
+          failedcrit = 9999999999999999
+          failedenabled = 'Disabled'
+
     for line in section:
-        if len(line) < 21:
+        if len(line) < 23:
             continue  # Skip incomplete lines
 
-        jobname_windows_updates_kpc, Mandatorycount, important1count, Optionalcount, Criticalcount, Importantcount, Moderatecount, Lowcount, Unspecifiedcount, rebootrequired, rebootrequiredsince, rebootrequiredsincehours, updatesearcherror, Mandatoryupdates, important1updates, Optionalupdates, Criticalupdates, Importantupdates, Lowupdates, Moderateupdates, Unspecifiedupdates = line[
-            :21
+        jobname_windows_updates_kpc, Mandatorycount, important1count, Optionalcount, Criticalcount, Importantcount, Moderatecount, Lowcount, Unspecifiedcount, rebootrequired, rebootrequiredsince, rebootrequiredsincehours, updatesearcherror, Mandatoryupdates, important1updates, Optionalupdates, Criticalupdates, Importantupdates, Lowupdates, Moderateupdates, Unspecifiedupdates, Failedcount, Failedupdates = line[
+            :23
         ]
         if (important1updates  == "-"):
             important1updates = ""        
@@ -162,6 +172,8 @@ def check_windows_updates_kpc(item, params, section):
             Lowupdates = ""
         if (Unspecifiedupdates  == "-"):
             Unspecifiedupdates = ""
+        if (Failedupdates  == "-"):
+            Failedupdates = ""
         if (rebootrequiredsincehours  == "99999"):
              rebootrequiredsincehoursstate = "?"
         else:
@@ -203,6 +215,10 @@ def check_windows_updates_kpc(item, params, section):
              Unspecifiedupdates = Unspecifiedupdates.replace("XXXNEWLINEXXX", "\n")
              Unspecifiedupdates = "Unspecified Severity: \n \n" + Unspecifiedupdates
 
+        if (Failedupdates != ""):
+             Failedupdates = Failedupdates.replace("XXXNEWLINEXXX", "\n")
+             Failedupdates = "Failed Updates: \n \n" + Failedupdates
+
         #support = "\n \n \n For Support and Sales Please Contact K&P Computer! \n \n E-Mail: hds@kpc.de \n \n 24/7 Helpdesk-Support: \n International: +800 4479 3300 \n Germany: +49 6122 7071 330 \n Austria: +43 1 525 1833 \n\n Web Germany: https://www.kpc.de \n Web Austria: https://www.kpc.at \n Web International: https://www.kpc.de/en"
 
         support = ""
@@ -220,6 +236,7 @@ def check_windows_updates_kpc(item, params, section):
         statelow = " (OK)"
         stateunspecified = " (OK)"
         statependingreboot = " (OK)"
+        statefailed = " (OK)"
 
         if int(important1count) >= int(important1warn):
              stateimportant1 = " (WARN)"
@@ -260,6 +277,11 @@ def check_windows_updates_kpc(item, params, section):
         if int(rebootrequiredsincehours) >= int(pendingrebootcrit):
              statependingreboot = " (CRIT, since " + rebootrequiredsincehoursstate + " hours)"
 
+        if int(Failedcount) >= int(failedwarn):
+             statefailed = " (WARN)"
+        if int(Failedcount) >= int(failedcrit):
+             statefailed = " (CRIT)"
+
         
         if int(important1count) >= int(important1warn) and state != State.CRIT and important1enabled == 'Enabled':
              state = State.WARN
@@ -297,6 +319,10 @@ def check_windows_updates_kpc(item, params, section):
              state = State.WARN
         if int(rebootrequiredsincehours) >= int(pendingrebootcrit) and pendingrebootenabled == 'Enabled':
              state = State.CRIT
+        if int(Failedcount) >= int(failedwarn) and state != State.CRIT and failedenabled == 'Enabled':
+             state = State.WARN
+        if int(Failedcount) >= int(failedcrit) and failedenabled == 'Enabled':
+             state = State.CRIT
         if state != State.WARN and state != State.CRIT:
              state = State.OK
 
@@ -323,6 +349,8 @@ def check_windows_updates_kpc(item, params, section):
              statependingreboot = " (OK)"
         if pendingrebootenabled == 'Disabled' and int(rebootrequiredsincehours) > 0:
              statependingreboot = " (OK, since " + rebootrequiredsincehoursstate + " hours)"
+        if failedenabled == 'Disabled':
+             statefailed = " (OK)"
 
         summarytext = ""
         
@@ -342,17 +370,19 @@ def check_windows_updates_kpc(item, params, section):
             summarytext = summarytext + "Low Severity: " + Lowcount + statelow + ", "   
         if(Unspecifiedcount != "0"):
             summarytext = summarytext + "Unspecified Severity: " + Unspecifiedcount + stateunspecified + ", "   
+        if(Failedcount != "0"):
+            summarytext = summarytext + "Failed Updates: " + Failedcount + statefailed + ", "
         if(rebootrequired == "Yes"):
             summarytext = summarytext + "Pending reboot: " + rebootrequired + statependingreboot
         if(summarytext == ""):
             summarytext = "No updates available, no pending reboot"
 
-        summarydetailsoverview = "Important Updates: " + important1count + stateimportant1 + "\n " + "Optional Updates: " + Optionalcount + stateoptional + "\n " + "Mandatory Severity: " + Mandatorycount + statemandatory + "\n " + "Critical Severity: " + Criticalcount + statecritical + "\n "   + "Important Severity: " + Importantcount + stateimportant + "\n " + "Moderate Severity: " + Moderatecount + statemoderate + "\n " + "Low Severity: " + Lowcount + statelow + "\n " + "Unspecified Severity: " + Unspecifiedcount + stateunspecified + "\n " + "Pending reboot: " + rebootrequired + statependingreboot     
+        summarydetailsoverview = "Important Updates: " + important1count + stateimportant1 + "\n " + "Optional Updates: " + Optionalcount + stateoptional + "\n " + "Mandatory Severity: " + Mandatorycount + statemandatory + "\n " + "Critical Severity: " + Criticalcount + statecritical + "\n "   + "Important Severity: " + Importantcount + stateimportant + "\n " + "Moderate Severity: " + Moderatecount + statemoderate + "\n " + "Low Severity: " + Lowcount + statelow + "\n " + "Unspecified Severity: " + Unspecifiedcount + stateunspecified + "\n " + "Failed Updates: " + Failedcount + statefailed + "\n " + "Pending reboot: " + rebootrequired + statependingreboot     
 
 
 
         #summarytext = summarytext
-        summarydetails = summarydetailsoverview + updatelist + important1updates + Optionalupdates + Mandatoryupdates + Criticalupdates + Importantupdates + Moderateupdates + Lowupdates + Unspecifiedupdates + support
+        summarydetails = summarydetailsoverview + updatelist + important1updates + Optionalupdates + Mandatoryupdates + Criticalupdates + Importantupdates + Moderateupdates + Lowupdates + Unspecifiedupdates + Failedupdates + support
 
         if (updatesearcherror != "0"):
             state=State.CRIT
@@ -382,6 +412,7 @@ check_plugin_kpc_ibmi_asp_utilization = CheckPlugin(
      "levels_low": ('fixed', (1, 99)),
      "levels_unspecified": ('fixed', (1, 99)),
      "levels_pendingreboot": ('fixed', (48, 96)),
+     "levels_failed": ('fixed', (1, 5)),
     },
     check_ruleset_name="windows_updates_kpc_windows_updates",
 )
