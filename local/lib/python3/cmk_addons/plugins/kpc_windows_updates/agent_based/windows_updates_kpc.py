@@ -148,6 +148,8 @@ def check_windows_updates_kpc(item, params, section):
           failedwarn = 9999999999999999
           failedcrit = 9999999999999999
           failedenabled = 'Disabled'
+    
+    failed_history_days = params.get("failed_history_days", 30)
 
     failed_history_days = params.get("failed_history_days", 30)
 
@@ -218,8 +220,31 @@ def check_windows_updates_kpc(item, params, section):
              Unspecifiedupdates = "Unspecified Severity: \n \n" + Unspecifiedupdates
 
         if (Failedupdates != ""):
-             Failedupdates = Failedupdates.replace("XXXNEWLINEXXX", "\n")
-             Failedupdates = "Failed Updates: \n \n" + Failedupdates
+             # Filter failed updates by date (last X days configured in ruleset)
+             failed_lines = Failedupdates.split("XXXNEWLINEXXX")
+             cutoff_date = datetime.now() - timedelta(days=failed_history_days)
+             filtered_failed_updates = []
+             
+             for line in failed_lines:
+                 if line.strip():
+                     try:
+                         date_str = line[:19]  # Extract "YYYY-MM-DD HH:MM:SS"
+                         update_date = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+                         if update_date >= cutoff_date:
+                             filtered_failed_updates.append(line)
+                     except (ValueError, IndexError):
+                         filtered_failed_updates.append(line)
+             
+             if filtered_failed_updates:
+                 Failedupdates = "XXXNEWLINEXXX".join(filtered_failed_updates)
+                 Failedcount = len(filtered_failed_updates)
+             else:
+                 Failedupdates = ""
+                 Failedcount = 0
+             
+             if Failedupdates:
+                 Failedupdates = Failedupdates.replace("XXXNEWLINEXXX", "\n")
+                 Failedupdates = "Failed Updates: \n \n" + Failedupdates
 
         #support = "\n \n \n For Support and Sales Please Contact K&P Computer! \n \n E-Mail: hds@kpc.de \n \n 24/7 Helpdesk-Support: \n International: +800 4479 3300 \n Germany: +49 6122 7071 330 \n Austria: +43 1 525 1833 \n\n Web Germany: https://www.kpc.de \n Web Austria: https://www.kpc.at \n Web International: https://www.kpc.de/en"
 

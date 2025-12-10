@@ -222,16 +222,22 @@ try
 
     }
 
-    #Checking for failed updates in update history (last 30 days)
-    $thirtyDaysAgo = $now.AddDays(-30)
+    #Checking for failed updates in update history
     try 
     {
-        $FailedUpdates = @($Searcher.QueryHistory(0, 1000) | Where-Object { $_.ResultCode -eq 4 -and $_.Date -ge $thirtyDaysAgo })
+        $FailedUpdates = @($Searcher.QueryHistory(0, 1000) | Where-Object { $_.ResultCode -eq 4 })
     }
     catch 
     {
         $errMsg = $_.Exception.Message
         $FailedUpdates = @()
+    }
+
+    # For testing failed Updates
+    $FailedUpdates = @($FailedUpdates) + [pscustomobject]@{
+    Date = (Get-Date).AddHours(-6)
+    Title = "SIMULATED FAILED UPDATE - Cumulative Update for Windows (KB0000000)"
+    ResultCode = 4
     }
 
     if ($FailedUpdates -and $FailedUpdates.count -gt 0) 
