@@ -143,6 +143,14 @@ def _parameter_valuespec_windows_updates_kpc() -> Dictionary:
                     prefill_fixed_levels=InputHint((1, 5)),
                 )
             ),
+            "failed_history_days": DictElement(
+                parameter_form=Integer(
+                    title=Title("Days to look back for failed updates"),
+                    help_text=Help("Only failed updates from the last X days will be considered (default: 30 days)"),
+                    prefill_value=30,
+                ),
+                required=False,
+            ),
         },
         title=Title("Windows Updates"),
         help_text=Help("Windows Updates"),  

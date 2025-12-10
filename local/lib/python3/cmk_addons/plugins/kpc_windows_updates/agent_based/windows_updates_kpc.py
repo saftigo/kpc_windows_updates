@@ -149,6 +149,8 @@ def check_windows_updates_kpc(item, params, section):
           failedcrit = 9999999999999999
           failedenabled = 'Disabled'
 
+    failed_history_days = params.get("failed_history_days", 30)
+
     for line in section:
         if len(line) < 23:
             continue  # Skip incomplete lines
@@ -413,6 +415,7 @@ check_plugin_kpc_ibmi_asp_utilization = CheckPlugin(
      "levels_unspecified": ('fixed', (1, 99)),
      "levels_pendingreboot": ('fixed', (48, 96)),
      "levels_failed": ('fixed', (1, 5)),
+     "failed_history_days": 30,
     },
     check_ruleset_name="windows_updates_kpc_windows_updates",
 )

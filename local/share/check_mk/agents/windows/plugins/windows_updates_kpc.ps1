@@ -222,10 +222,11 @@ try
 
     }
 
-    #Checking for failed updates in update history
+    #Checking for failed updates in update history (last 30 days)
+    $thirtyDaysAgo = $now.AddDays(-30)
     try 
     {
-        $FailedUpdates = @($Searcher.QueryHistory(0, 1000) | Where-Object { $_.ResultCode -eq 4 })
+        $FailedUpdates = @($Searcher.QueryHistory(0, 1000) | Where-Object { $_.ResultCode -eq 4 -and $_.Date -ge $thirtyDaysAgo })
     }
     catch 
     {
